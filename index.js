@@ -1,15 +1,20 @@
-const express = require("express");
-const router = express.Router();
-// const bodyParser = require("body-parser");
-
+const express = require('express');
 const app = express();
-app.use(express.urlencoded({extended: true}));
+const indexRoute = require('./app/src/controllers/todo/todo');
+const methodOverride = require('method-override');
+
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(methodOverride('_method'));
 
-const todosRoute = require("./app/src/controllers/todos/todos");
+app.get('', (req, res) =>{
+    return res.redirect('/todos')
+})
+app.use('/todos', indexRoute)
 
-app.use("/todos", todosRoute);
 
-app.listen(3000, function() {
-    console.log("Todo App Server is up and running on port 3000...");
+app.listen(3000, ()=>{
+    console.log('Server running on port 3000!')
 });
+

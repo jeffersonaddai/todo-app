@@ -1,3 +1,4 @@
 module.exports = {
-    usefake: true
-};
+    usefake: true,
+    fakePassword: '8vpawh75ttrcu2'
+}
