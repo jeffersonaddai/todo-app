@@ -7,6 +7,7 @@ const {TodoStore} = require('../../model/todo/todo');
 const {Todo} = require('../../model/todo/todo')
 const config = require('../../config/config');
 const {formatDate} = require('../../utils/formatUtils');
+const {validate} = require('../../utils/validate');
 let todoStore = new TodoStore();
 
 if(config.usefake){
@@ -22,17 +23,17 @@ router.get('/', (req, res) => {
     if(req.accepts('text/html')){
         let htmlFrag = '';
         for (todo of todos) {
-            let date = new Date(todo.date)
-            date = `${date.toDateString()}`
             htmlFrag += `
             <tr>
                 <th scope="row">${todos.indexOf(todo) + 1}</th>
                 <td>${todo.title}</td>
-                <td>${date}</td>
+                <td>${todo.date}</td>
                 <td>${todo.type}</td>
                 <td>${todo.description}</td>
-                <td><form action = "/todos/${todo.id}?_method=DELETE" method="POST"><input class="btn btn-danger" type="submit" value="Delete"></form></td>
-                <td><a href="/todos/update-task/${todo.id}"><button class="btn btn-warning">Edit</button></a></td>
+                <td class="d-flex">
+                <form action = "/todos/${todo.id}?_method=DELETE" method="POST"><input class="btn btn-danger" type="submit" value="Delete"></form>
+                <a class="ms-2" href="/todos/update-task/${todo.id}"><button class="btn btn-warning">Edit</button></a>
+                </td>
             </tr>       
             `
         }
@@ -40,9 +41,6 @@ router.get('/', (req, res) => {
         return res.send(renderTemplate(todoCard(htmlFrag)))
     }
     else{
-        todos.forEach(todo =>{
-            todo.date = (new Date(todo.date)).toDateString();
-        })
         let response = {
             code: 'success',
             message: 'request successful',
@@ -61,7 +59,7 @@ router.get('/create-task', (req, res) => {
 
 router.get('/update-task/:id', (req, res) => {
     const todo = todoStore.getTodo(req.params.id)
-    if(!todo) return res.status(404).end()
+    if(!todo) return res.status(404).send(renderTemplate(`<div class="mx-auto text-center text-danger"><h1>404 resource not found</h1><div>`))
     res.send(renderTemplate(updateTasksCard(
         req.params.id,
         todo.title, 
@@ -79,12 +77,34 @@ router.put('/:id', (req, res) =>{
         req.body.type,
         req.body.description
     );
-    todoStore.editTodo(req.params.id, newTodo);
-    return res.redirect('/')
+    if(!todoStore.editTodo(req.params.id, newTodo)) return res.status(404).send({
+        code: "failed",
+        message: "resource not found",
+        result: {}
+    });
+    if(req.accepts('text/html')){
+        return res.redirect('/')
+    }
+    return res.send({
+        code:'success',
+        message:'resource updated successfully!',
+        result:{
+            todo: todoStore.getTodo(req.params.id)
+        }
+    })
 })
 
 router.post('/', (req, res) =>{
-    console.log("Creating..");
+    const {error} = validate(req.body);
+    if(error){
+        return res.status(400).send({
+            code: 'failed',
+            message: error.message,
+            result: {
+                todo: req.body
+            }
+        });
+    }
     let todo = new Todo(
         Date.now(), 
         req.body.title, 
@@ -102,7 +122,7 @@ router.post('/', (req, res) =>{
             code: "success",
             message: "resource created successfully!",
             result: {
-                todos: todoStore.getTodos()
+                todo: todoStore.getTodo(todo.id)
             }
         }
 
@@ -138,10 +158,8 @@ router.delete('/:id', (req, res) =>{
     else {
         response = {
             code: 'failed',
-            message: 'resource delete failed',
-            result: {
-                todos: todoStore.getTodos(),
-            }
+            message: 'resource not found',
+            result: {}
         }
         return res.status(404).send(response);
     }

@@ -36,8 +36,7 @@ module.exports = {
                 <th scope="col">Date</th>
                 <th scope="col">Type</th>
                 <th scope="col">Description</th>
-                <th scope="col">Control</th>
-                <th scope="col">Edit</th>
+                <th class="text-center" scope="col">Control</th>
             </tr>
             </thead>
             <tbody>
